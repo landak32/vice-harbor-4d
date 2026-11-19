@@ -44,6 +44,11 @@ export class CameraRig {
     const baseYaw = state.yaw + this.yawOffset;
     this.yaw = this.initialised ? this.yaw + wrapAngle(baseYaw - this.yaw) * (1 - Math.exp(-9 * dt)) : baseYaw;
 
+    // 9.0 is the closest chase distance that keeps the car's own roof and boot out of the bottom
+    // of the frame at this height; the 0.10 per unit of speed buys look-room ahead as the road
+    // rushes in. The 3.0 clamp (~30 u/s) stops the rig trailing far enough back to sink into the
+    // facades behind the car and, since distance is damped at lambda 4, stops it drifting on
+    // after a crash instead of snapping home.
     const dist = (driving ? 9.0 + Math.min(3.0, speed * 0.10) : 5.6) + this.distanceBias;
     const height = (driving ? 4.35 + Math.min(0.9, speed * 0.02) : 2.55) + this.heightBias;
     this.distance = damp(this.distance, dist, 4, dt);

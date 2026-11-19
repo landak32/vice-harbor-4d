@@ -179,8 +179,10 @@ export function redressChase(game, world) {
   game.police.heli.parked = true;
   game.police.heli.group.position.set(car.x + fx * 26 + rx * 5.5, 14.5, car.z + fz * 26 + rz * 5.5);
   game.police.heli.angle = Math.atan2(-rx, -rz);
-  // the cone is a hard-edged volume and here it slices through a facade on the left, which reads as a
-  // stray translucent triangle; the searchlight pool on the road carries the effect instead
+  // the cone is a hard-edged, double-sided additive volume with depthWrite off, and from this rig
+  // (14.5 up, 26 behind) its near silhouette slices through the facade on the left, which reads as
+  // a stray translucent triangle hanging over the street. Hiding it leaves the searchlight pool on
+  // the road to carry the effect; the parked rotor still sells the air unit.
   game.police.heli.cone.visible = false;
 
   // traffic ahead in the player's lane and in the oncoming lane
@@ -228,6 +230,10 @@ export function setupFoot(game, world) {
   game.wanted = 0;
   game.police.wanted = 0;
   // Coral Heights sidewalk: block centre (210,150), so the kerb is at z = 127 and the road at z = 120
+  // 125.4 is 1.6 m inside that kerb — far enough that the walker's capsule never straddles the curb
+  // mesh — and 196 is 14 m west of the block centre, which puts the corner spawn and its wall out of
+  // frame. The rig is then snapped to the same x/z instead of damped in: it starts at its default
+  // (0,6,-14), and letting it lerp would leave the first captured frames mid-flight and off-comp.
   game.walker.x = 196;
   game.walker.z = 125.4;
   game.walker.yaw = Math.PI / 2;
@@ -247,7 +253,12 @@ export function setupFoot(game, world) {
   };
 }
 
-/** Same trap as the chase: after three seconds of walking the spawn corner is behind the camera. */
+/**
+ * Same trap as the chase: after three seconds of walking the spawn corner is behind the camera.
+ * The walker's position is read back rather than re-stating 196/125.4, so the redress always agrees
+ * with the snap in setupFoot — hard-coding it twice would let the two drift apart silently and the
+ * redress would then stage the crowd at a spot the camera is not pointing at.
+ */
 export function redressFoot(game, world) {
   const x = game.walker.x;
   const z = game.walker.z;

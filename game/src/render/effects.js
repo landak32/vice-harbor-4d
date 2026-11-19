@@ -24,6 +24,10 @@ const PART_VERT = /* glsl */ `
       return;
     }
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    // 52 px, not the 110 the flash was first authored at: muzzle particles spawn about 0.4 units
+    // past the barrel, so in third person the 1/z term is enormous and a 110 cap let a single
+    // flash sprite cover a third of the frame — with additive blending the shot blew the screen
+    // out to white. 52 keeps the flash a readable spark at arm's length and still allows a halo.
     gl_PointSize = min(52.0, aSize * (260.0 / max(1.0, -mv.z)));
     gl_Position = projectionMatrix * mv;
   }

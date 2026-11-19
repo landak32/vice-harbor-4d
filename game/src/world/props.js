@@ -134,6 +134,10 @@ export class StreetProps {
     this.group.add(this.streetlights);
 
     // light cones hanging under each lamp head
+    // depthWrite stays false: the cone is a double-sided additive volume that can never sort
+    // correctly against the road and the facades behind it, and writing depth let it stamp a flat
+    // wedge over whatever it overlapped. Additive blending only needs the colour contribution, so
+    // dropping the depth footprint is both cheaper and the only way this reads as air, not geometry.
     const coneGeo = new THREE.ConeGeometry(4.6, 7.4, 10, 1, true);
     const coneMat = new THREE.MeshBasicMaterial({
       color: 0xffd9a0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending,
@@ -328,6 +332,9 @@ export class StreetProps {
   }
 
   update(dt, glow) {
+    // 0.035, not the 0.35 this started at: the cone is 7.4 units tall and covers a lot of pixels,
+    // so at any visible opacity it reads as a solid slab of light at night. Scaled this low it only
+    // lifts the air around the lamp head; the 0.5 pool below carries the light on the pavement.
     this.coneMaterial.opacity = glow * 0.035;
     this.poolMaterial.opacity = glow * 0.5;
     this.bulbs.material.opacity = glow * 0.85;

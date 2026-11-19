@@ -230,8 +230,10 @@ export class TrafficSystem {
     }
 
     // headlight glows, two per car, one instanced additive quad set
-    // textured: an untextured quad reads as a hard white rectangle whenever an oncoming car is
-    // close enough for the plane to cover a screen-sized patch
+    // the map is not optional: a MeshBasicMaterial quad with no texture has no alpha ramp, so the
+    // whole 1.7 x 1.7 plane renders as flat colour — an oncoming car close to the lens turns that
+    // into a hard white rectangle covering a screen-sized patch. glowTexture supplies the radial
+    // falloff additive blending needs to read as a light rather than a card.
     const glowGeo = new THREE.PlaneGeometry(1.7, 1.7);
     const glowMat = new THREE.MeshBasicMaterial({
       map: glowTexture('255,250,235', '255,214,150'), color: 0xffdca8, transparent: true, opacity: 0,
