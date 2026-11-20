@@ -277,6 +277,20 @@ export class MissionRunner {
     return `Stage ${this.stage + 1} of ${this.mission.stages.length}`;
   }
 
+  /** "CHAPTER 3/6" for the HUD's job header. */
+  get chapter() {
+    if (!this.mission) return null;
+    const i = MISSIONS.findIndex((m) => m.id === this.mission.id);
+    return `Chapter ${i + 1}/${MISSIONS.length}`;
+  }
+
+  /** The line the job board shows under the current objective. */
+  get nextObjective() {
+    if (!this.mission) return null;
+    const st = this.mission.stages[this.stage + 1];
+    return st ? st.objective : null;
+  }
+
   toJSON() {
     return { index: this.index, stage: this.stage, active: this.active, completed: [...this.completed] };
   }

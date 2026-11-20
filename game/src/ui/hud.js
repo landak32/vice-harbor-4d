@@ -3,43 +3,64 @@
 import { drawPortrait } from './portraits.js';
 
 const fmtMoney = (v) => `$${Math.max(0, Math.round(v)).toLocaleString('en-US')}`;
+const fmtDist = (d) => (d >= 1000 ? `${(d / 1000).toFixed(1)}k` : `${Math.max(1, Math.round(d))}m`);
 
 export class Hud {
   constructor() {
     this.root = document.getElementById('hud');
+    const $ = (id) => document.getElementById(id);
     this.el = {
-      misName: document.getElementById('misName'),
-      misStage: document.getElementById('misStage'),
-      misObj: document.getElementById('misObj'),
-      misBar: document.getElementById('misBar'),
-      money: document.getElementById('money'),
-      stars: document.getElementById('stars'),
-      place: document.getElementById('place'),
-      hpBar: document.getElementById('hpBar'),
-      arBar: document.getElementById('arBar'),
-      wName: document.getElementById('wName'),
-      wAmmo: document.getElementById('wAmmo'),
-      speedo: document.getElementById('speedo'),
-      kmh: document.getElementById('kmh'),
-      carName: document.getElementById('carName'),
-      carDmg: document.getElementById('carDmg'),
-      minimap: document.getElementById('minimap'),
-      subtitle: document.getElementById('subtitle'),
-      subWho: document.getElementById('subWho'),
-      subLine: document.getElementById('subLine'),
-      portrait: document.getElementById('portrait'),
-      banner: document.getElementById('banner'),
-      banTag: document.getElementById('banTag'),
-      banName: document.getElementById('banName'),
-      banReward: document.getElementById('banReward'),
-      toast: document.getElementById('toast'),
-      radio: document.getElementById('radio'),
-      help: document.getElementById('help'),
+      misTag: $('misTag'),
+      misName: $('misName'),
+      misStage: $('misStage'),
+      misObj: $('misObj'),
+      misNext: $('misNext'),
+      misBar: $('misBar'),
+      pursuit: $('pursuit'),
+      purHead: $('purHead'),
+      purCount: $('purCount'),
+      purUnits: $('purUnits'),
+      purMore: $('purMore'),
+      money: $('money'),
+      clock: $('clock'),
+      stars: $('stars'),
+      place: $('place'),
+      rankNum: $('rankNum'),
+      rankTitle: $('rankTitle'),
+      repBar: $('repBar'),
+      repTxt: $('repTxt'),
+      hpBar: $('hpBar'),
+      hpTxt: $('hpTxt'),
+      arBar: $('arBar'),
+      arTxt: $('arTxt'),
+      standName: $('standName'),
+      standBar: $('standBar'),
+      radioSt: $('radioSt'),
+      radioTrack: $('radioTrack'),
+      loadout: $('loadout'),
+      speedo: $('speedo'),
+      kmh: $('kmh'),
+      carName: $('carName'),
+      carSpec: $('carSpec'),
+      carDmg: $('carDmg'),
+      carDmgTxt: $('carDmgTxt'),
+      minimap: $('minimap'),
+      subtitle: $('subtitle'),
+      subWho: $('subWho'),
+      subLine: $('subLine'),
+      portrait: $('portrait'),
+      banner: $('banner'),
+      banTag: $('banTag'),
+      banName: $('banName'),
+      banReward: $('banReward'),
+      toast: $('toast'),
+      help: $('help'),
     };
     this.cache = {};
     this.bannerTimer = 0;
     this.toastTimer = 0;
     this.portraitId = null;
+    this.loadoutSig = null;
   }
 
   show(on = true) {
@@ -61,21 +82,73 @@ export class Hud {
       this.el.stars.innerHTML = html;
     });
     this.set('place', `${s.district} · ${s.street}`, (v) => { this.el.place.textContent = v; });
-    this.set('hp', Math.round(s.health), (v) => { this.el.hpBar.style.width = `${Math.max(0, v)}%`; });
-    this.set('ar', Math.round(s.armour), (v) => { this.el.arBar.style.width = `${Math.max(0, v)}%`; });
-    this.set('wn', s.weapon, (v) => { this.el.wName.textContent = v; });
-    this.set('wa', s.ammo, (v) => { this.el.wAmmo.textContent = v; });
+    this.set('clock', s.clock ?? '', (v) => { this.el.clock.textContent = v; });
+
+    this.set('hp', Math.round(s.health), (v) => {
+      this.el.hpBar.style.width = `${Math.max(0, v)}%`;
+      this.el.hpTxt.textContent = String(Math.max(0, v));
+    });
+    this.set('ar', Math.round(s.armour), (v) => {
+      this.el.arBar.style.width = `${Math.max(0, v)}%`;
+      this.el.arTxt.textContent = String(Math.max(0, v));
+    });
+    this.set('stand', `${s.standing}|${s.standingHeat}`, () => {
+      this.el.standName.textContent = s.standing;
+      this.el.standBar.style.width = `${Math.round((s.standingHeat ?? 0) * 100)}%`;
+    });
+
+    this.set('misTag', s.missionChapter ?? 'Chapter', (v) => { this.el.misTag.textContent = v; });
     this.set('misName', s.missionName ?? 'No job active', (v) => { this.el.misName.textContent = v; });
     this.set('misStage', s.missionStage ?? '—', (v) => { this.el.misStage.textContent = v; });
     this.set('misObj', s.objective ?? 'Press T to call a job from the burner phone', (v) => { this.el.misObj.textContent = v; });
+    this.set('misNext', s.nextObjective ?? '', (v) => {
+      this.el.misNext.innerHTML = v ? `<b>NEXT</b> ${v}` : '';
+      this.el.misNext.style.display = v ? 'block' : 'none';
+    });
     this.set('misBar', Math.round((s.missionProgress ?? 0) * 100), (v) => { this.el.misBar.style.width = `${v}%`; });
+
+    const units = s.units ?? [];
+    this.set('purSig', units.map((u) => `${u.name}${u.role}${Math.round(u.dist / 10)}`).join('|'), () => {
+      this.el.pursuit.classList.toggle('on', units.length > 0);
+      this.el.purHead.textContent = s.pursuitLabel ?? 'KPD RESPONSE';
+      this.el.purCount.textContent = units.length ? `${units.length} UNIT${units.length === 1 ? '' : 'S'}` : '';
+      this.el.purUnits.innerHTML = units
+        .slice(0, 5)
+        .map((u) => `<div class="u"><span>${u.name}</span><i>${u.role}</i><em>${fmtDist(u.dist)}</em></div>`)
+        .join('');
+      this.el.purMore.textContent = units.length > 5 ? `+${units.length - 5} more inbound` : '';
+    });
+
+    this.set('rank', `${s.rank}|${s.rankTitle}`, () => {
+      this.el.rankNum.textContent = String(s.rank ?? 1);
+      this.el.rankTitle.textContent = s.rankTitle ?? 'RUNNER';
+    });
+    this.set('rep', `${s.repInto}|${s.repNeed}`, () => {
+      const pct = s.repNeed ? Math.min(100, (s.repInto / s.repNeed) * 100) : 0;
+      this.el.repBar.style.width = `${pct}%`;
+      this.el.repTxt.textContent = `${Math.round(s.repInto)} / ${Math.round(s.repNeed)} RP`;
+    });
+
+    this.set('radioSt', s.radio ?? 'WAVE 88.3', (v) => { this.el.radioSt.textContent = `RADIO · ${v}`; });
+    this.set('radioTrack', s.radioTrack ?? '', (v) => { this.el.radioTrack.textContent = v; });
+
+    const load = s.loadout ?? [];
+    this.set('loadSig', load.map((w) => `${w.key}:${w.ammo}:${w.cur ? 1 : 0}`).join('|'), () => {
+      this.el.loadout.innerHTML = load
+        .map((w) => `<div class="slot${w.cur ? ' cur' : ''}${w.melee ? ' melee' : ''}"><span>${w.name}</span><small>${w.ammo}</small></div>`)
+        .join('');
+    });
 
     const driving = !!s.driving;
     this.set('driving', driving, (v) => { this.el.speedo.classList.toggle('on', v); });
     if (driving) {
       this.set('kmh', Math.round(s.kmh ?? 0), (v) => { this.el.kmh.textContent = String(v); });
+      this.set('gear', s.gear ?? 1, (v) => { this.el.carSpec.textContent = `GEAR ${v} · ${s.carSpec ?? ''}`; });
       this.set('carName', s.carName ?? '—', (v) => { this.el.carName.textContent = v; });
-      this.set('carDmg', Math.round((s.carDamage ?? 0) * 100), (v) => { this.el.carDmg.style.width = `${v}%`; });
+      this.set('carDmg', Math.round((s.carDamage ?? 0) * 100), (v) => {
+        this.el.carDmg.style.width = `${v}%`;
+        this.el.carDmgTxt.textContent = v > 62 ? 'ENGINE CRITICAL' : v > 28 ? 'BODY DAMAGE' : 'CONDITION OK';
+      });
     }
 
     this.set('sub', s.subtitle ? `${s.subtitle.who}|${s.subtitle.line}` : '', () => {
@@ -91,7 +164,6 @@ export class Hud {
         this.el.subtitle.classList.remove('on');
       }
     });
-    this.set('radio', s.radio ?? 'WAVE 88.3', (v) => { this.el.radio.textContent = `RADIO · ${v}`; });
   }
 
   banner(tag, name, reward, seconds = 4) {

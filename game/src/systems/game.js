@@ -8,12 +8,20 @@ import { CarPhysics, readDrivingControls } from './driving.js';
 import { CameraRig } from './camera.js';
 import { PoliceForce } from '../entities/police.js';
 import { ThugCrew } from '../entities/thugs.js';
-import { WeaponSystem, WeaponModel, WEAPONS } from '../entities/weapons.js';
+import { WeaponSystem, WeaponModel, WEAPONS, WEAPON_ORDER } from '../entities/weapons.js';
 import { MissionRunner } from './missions.js';
 import { Hud } from '../ui/hud.js';
 import { Minimap } from './minimap.js';
 import { Menus, SaveSystem } from '../ui/menus.js';
 import { dist2 } from '../core/math.js';
+
+const CALLSIGNS = ['KITE', 'MARLIN', 'CORAL', 'TARPON', 'GULL', 'PELICAN', 'ANCHOR', 'DRIFT'];
+
+const RADIO = [
+  { station: 'WAVE 88.3', tracks: ['Neon Tide — Cora Vale', 'Harbor Lights — The Salts', 'Slow Burn — Dita Rey'] },
+  { station: 'RIPTIDE 101.9', tracks: ['Breakwater — Vandal Coast', 'Night Ferry — Lumen', 'Salt Static — The Wrecks'] },
+  { station: 'K-HARBOR 92.1', tracks: ['Anchor Chain — Red Tide', 'Boardwalk Run — Sonny Vex', 'Last Call — Marisol'] },
+];
 
 export class Game {
   constructor(world) {
@@ -38,6 +46,8 @@ export class Game {
     this.carIsCourier = false;
     this.courierMarked = false;
     this.radioStation = 'WAVE 88.3';
+    this.rep = 0;
+    this.repPerRank = 650;
     this.time = 0;
     this.paused = false;
     this.dead = false;
@@ -429,31 +439,84 @@ export class Game {
     this.world.pedestrians.scare(this.walker.x, this.walker.z, 26);
   }
 
+  /* ---------- reputation ---------- */
+
+  get rank() { return Math.floor(this.rep / this.repPerRank) + 1; }
+  get rankInto() { return this.rep % this.repPerRank; }
+  get rankNeed() { return this.repPerRank; }
+  get rankTitle() {
+    const r = this.rank;
+    if (r >= 9) return 'KINGPIN';
+    if (r >= 7) return 'FIXER';
+    if (r >= 5) return 'WHEELMAN';
+    if (r >= 3) return 'RUNNER';
+    return 'ROOKIE';
+  }
+  get standing() {
+    const w = this.wanted;
+    return w >= 5 ? 'HUNTED' : w >= 3 ? 'HEAT' : w >= 1 ? 'WATCHED' : 'CLEAN';
+  }
+
+  clockString() {
+    const h = Math.floor(this.day.hour % 24);
+    const m = Math.floor((this.day.hour % 1) * 60);
+    const day = 1 + Math.floor(this.time / 720);
+    return `DAY ${day} · ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  }
+
   /* ---------- HUD snapshot ---------- */
 
   hudSnapshot() {
-    const addr = this.city.addressAt(this.driving ? this.car.group.position.x : this.walker.x, this.driving ? this.car.group.position.z : this.walker.z);
-    const w = WEAPONS[this.weapon.current];
-    const ammo = w.melee ? '—' : `${this.weapon.ammo[this.weapon.current]} / ${this.weapon.reserve[this.weapon.current]}`;
+    const px = this.driving ? this.car.group.position.x : this.walker.x;
+    const pz = this.driving ? this.car.group.position.z : this.walker.z;
+    const addr = this.city.addressAt(px, pz);
+    const station = RADIO.find((r) => r.station === this.radioStation) ?? RADIO[0];
+    const track = station.tracks[Math.floor(this.time / 47) % station.tracks.length];
+    const kmh = this.carPhysics?.kmh ?? 0;
+    const spec = this.driving && this.carType ? CAR_TYPES[this.carType] : null;
     return {
       money: this.money,
       wanted: this.wanted,
       district: addr.district,
       street: addr.street,
+      clock: this.clockString(),
       health: this.health,
       armour: this.armour,
-      weapon: w.name,
-      ammo,
+      standing: this.standing,
+      standingHeat: this.wanted / 5,
+      rep: this.rep,
+      rank: this.rank,
+      rankTitle: this.rankTitle,
+      repInto: this.rankInto,
+      repNeed: this.rankNeed,
+      units: this.police.units.map((u, i) => ({
+        name: `${CALLSIGNS[i % CALLSIGNS.length]}-${12 + i * 4}`,
+        role: u.state === 'engage' ? 'FOOT' : 'PURSUIT',
+        dist: Math.hypot(u.x - px, u.z - pz),
+      })),
+      pursuitLabel: this.police.heli.active ? 'KPD RESPONSE · AIR UNIT' : 'KPD RESPONSE',
+      loadout: WEAPON_ORDER.map((k) => ({
+        key: k,
+        name: WEAPONS[k].name,
+        melee: !!WEAPONS[k].melee,
+        ammo: WEAPONS[k].melee ? 'MELEE' : `${this.weapon.ammo[k] ?? 0}/${this.weapon.reserve[k] ?? 0}`,
+        cur: k === this.weapon.current,
+      })),
       driving: this.driving,
-      kmh: this.carPhysics?.kmh ?? 0,
-      carName: this.car ? CAR_TYPES[this.carType].name : '—',
+      kmh,
+      gear: Math.min(6, Math.max(1, 1 + Math.floor(kmh / 26))),
+      carName: this.car && this.carType ? CAR_TYPES[this.carType].name : '—',
+      carSpec: spec ? `${this.carType.toUpperCase()} · ${Math.round(spec.top * 3.6)} KM/H TOP` : '',
       carDamage: this.car?.damage ?? 0,
+      missionChapter: this.missions.chapter,
       missionName: this.missions.mission?.name,
       missionStage: this.missions.stageLabel,
       objective: this.missions.objective,
+      nextObjective: this.missions.nextObjective,
       missionProgress: this.missions.progress,
       subtitle: this.missions.subtitle,
       radio: this.radioStation,
+      radioTrack: track,
     };
   }
 

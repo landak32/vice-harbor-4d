@@ -32,7 +32,7 @@ export function createCamera() {
 
 /** Fixed-size render for the shot recorder: exactly 1280x720, device pixel ratio 1. */
 export function sizeForShot(renderer, camera, width = 1280, height = 720) {
-  renderer.setPixelRatio(1);
+  renderer.setPixelRatio(1.5);
   renderer.setSize(width, height, false);
   camera.aspect = width / height;
   camera.updateProjectionMatrix();

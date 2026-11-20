@@ -95,6 +95,63 @@ export function carGeometry(typeKey) {
   return geo;
 }
 
+const detailCache = new Map();
+
+/**
+ * Bolt-on trim that is too fine for the shell geometry: a spoiler on the fast cars, a plate and a
+ * light bar on the boot, skirts down the sills. Kept in its own mesh so the paint tint on the shell
+ * does not wash the trim out.
+ */
+export function carDetailGeometry(typeKey) {
+  if (detailCache.has(typeKey)) return detailCache.get(typeKey);
+  const t = CAR_TYPES[typeKey];
+  const g = new GeoBuilder();
+  const L = t.L, W = t.W, H = t.H;
+  const bodyH = H * 0.4;
+  const bodyY = 0.34 + bodyH / 2;
+  const bootY = bodyY + bodyH * 0.42;
+  const fast = typeKey === 'sports' || typeKey === 'coupe' || typeKey === 'police';
+  const cabinY = bodyY + bodyH / 2 + t.cabinH / 2;
+
+  // plate and its lamp, low on the boot
+  g.box(0, bodyY - 0.02, -L / 2 - 0.015, W * 0.3, 0.17, 0.03, { color: [0.86, 0.88, 0.82], uvScale: 1, vScale: 1 });
+  g.box(0, bodyY + 0.09, -L / 2 - 0.01, W * 0.16, 0.05, 0.03, { color: [0.55, 0.58, 0.6], uvScale: 1, vScale: 1 });
+
+  // a light bar across the boot ties the two tail lamps together and gives the rear a horizon
+  g.box(0, bodyY + 0.1, -L / 2 - 0.005, W * 0.78, 0.055, 0.03, { color: [0.42, 0.05, 0.05], uvScale: 1, vScale: 1 });
+
+  // sills
+  for (const sx of [-1, 1]) {
+    g.box(sx * (W / 2 + 0.01), bodyY - 0.13, 0, 0.05, 0.1, L * 0.62, { color: [0.1, 0.11, 0.13], uvScale: 1, vScale: 1 });
+  }
+
+  if (fast) {
+    // boot spoiler on two stalks
+    const sy = bootY + bodyH * 0.16 + 0.2;
+    g.box(0, sy, -L * 0.44, W * 0.86, 0.05, 0.28, { color: [0.1, 0.11, 0.13], uvScale: 1, vScale: 1 });
+    for (const sx of [-1, 1]) {
+      g.box(sx * W * 0.3, sy - 0.1, -L * 0.44, 0.07, 0.2, 0.2, { color: [0.1, 0.11, 0.13], uvScale: 1, vScale: 1 });
+    }
+    // twin exhausts
+    for (const sx of [-1, 1]) {
+      g.box(sx * W * 0.22, 0.24, -L / 2 - 0.04, 0.13, 0.1, 0.1, { color: [0.62, 0.64, 0.66], uvScale: 1, vScale: 1 });
+    }
+  }
+
+  // a shark fin aerial: it reads at any distance and costs one box
+  g.box(0, cabinY + t.cabinH * 0.62, t.cabinZ - t.cabinL * 0.34, 0.05, 0.14, 0.3, { color: [0.1, 0.11, 0.13], uvScale: 1, vScale: 1 });
+
+  const geo = g.build();
+  detailCache.set(typeKey, geo);
+  return geo;
+}
+
+let detailMatCache = null;
+export function carDetailMaterial() {
+  if (!detailMatCache) detailMatCache = new THREE.MeshLambertMaterial({ vertexColors: true });
+  return detailMatCache;
+}
+
 let wheelGeoCache = null;
 /** Tyre plus a lighter hub disc, merged into one geometry with vertex colours. */
 export function wheelGeometry(radius = 0.34, width = 0.24) {
@@ -141,6 +198,10 @@ export class Vehicle {
     this.body.castShadow = true;
     this.body.receiveShadow = true;
     this.group.add(this.body);
+
+    this.details = new THREE.Mesh(carDetailGeometry(typeKey), carDetailMaterial());
+    this.details.castShadow = true;
+    this.group.add(this.details);
 
     this.wheels = [];
     const wm = wheelMaterial();

@@ -131,8 +131,9 @@ function pedAt(world, index) {
 /* ------------------------------------------------------------------ chase: night downtown */
 
 export function setupChase(game, world) {
-  world.day.setHour(22.4);
+  world.day.setHour(16.6);
   game.money = 18650;
+  game.rep = 4230;
   game.weapon.select('smg');
   game.health = 78;
   game.armour = 45;
@@ -167,6 +168,11 @@ export function redressChase(game, world) {
   const rx = Math.cos(yaw);
   const rz = -Math.sin(yaw);
 
+  // The chase is a hero-car shot: pull the rig in and swing it off dead-centre so the coupe reads as
+  // a three-quarter from its rear right flank instead of a flat slab straight up the road.
+  game.rig.distanceBias = -1.8;
+  game.rig.heightBias = -0.55;
+  game.rig.yawOffset = 0.34;
   // cruisers: one alongside on the right, one behind on the left, plus a third closing in
   game.police.units.length = 0;
   stageCruiser(game, car.x + rx * 4.2 + fx * 6.5, car.z + rz * 4.2 + fz * 6.5, yaw + 0.05);
@@ -214,6 +220,7 @@ export function redressChase(game, world) {
   }
 
   // the chase frame stays clean: the pursuit is told by the stars, the sirens and the searchlight
+  quietMission(game, 4, 2);
   game.hud.toast('WANTED · EVADE THE AIR UNIT', 30);
   world.pedestrians.update(0.0001, 0);
   world.traffic.syncInstances(0.0001, world.day.lampGlow);
@@ -224,6 +231,7 @@ export function redressChase(game, world) {
 export function setupFoot(game, world) {
   world.day.setHour(11.3);
   game.money = 7420;
+  game.rep = 2975;
   game.health = 92;
   game.armour = 20;
   game.weapon.select('pistol');
@@ -310,6 +318,7 @@ export function redressFoot(game, world) {
 export function setupDrive(game, world) {
   world.day.setHour(17.42);
   game.money = 12980;
+  game.rep = 4285;
   game.health = 100;
   game.armour = 60;
   game.weapon.select('pistol');
@@ -379,6 +388,7 @@ export function redressDrive(game, world) {
 export function setupMission(game, world) {
   world.day.setHour(20.1);
   game.money = 24600;
+  game.rep = 5100;
   game.health = 64;
   game.armour = 30;
   game.weapon.select('smg');
