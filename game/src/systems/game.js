@@ -17,6 +17,11 @@ import { dist2 } from '../core/math.js';
 
 const CALLSIGNS = ['KITE', 'MARLIN', 'CORAL', 'TARPON', 'GULL', 'PELICAN', 'ANCHOR', 'DRIFT'];
 
+/** Police return fire: how often a shot connects, and what a hit costs with and without armour. */
+const POLICE_HIT_CHANCE = 0.45;
+const POLICE_DAMAGE_ARMOURED = 4;
+const POLICE_DAMAGE_BARE = 7;
+
 const RADIO = [
   { station: 'WAVE 88.3', tracks: ['Neon Tide — Cora Vale', 'Harbor Lights — The Salts', 'Slow Burn — Dita Rey'] },
   { station: 'RIPTIDE 101.9', tracks: ['Breakwater — Vandal Coast', 'Night Ferry — Lumen', 'Salt Static — The Wrecks'] },
@@ -196,8 +201,8 @@ export class Game {
     );
     this.effects.muzzleFlash({ x: shooter.x, y: 1.3, z: shooter.z }, { x: dirX, z: dirZ });
     this.audio.play('pistol');
-    if (Math.random() < 0.45) {
-      this.damagePlayer(this.armour > 0 ? 4 : 7);
+    if (Math.random() < POLICE_HIT_CHANCE) {
+      this.damagePlayer(this.armour > 0 ? POLICE_DAMAGE_ARMOURED : POLICE_DAMAGE_BARE);
       this.rig.addShake(0.3);
     }
   }

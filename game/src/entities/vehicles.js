@@ -320,11 +320,9 @@ export class Vehicle {
       w.spin.rotation.x = this.spinAngle;
       w.pivot.rotation.y = w.front ? steer * 0.55 : 0;
     }
-    const lit = 0.25 + nightGlow * 0.75;
     this.lightMaterial.opacity = nightGlow * 0.95;
     this.beamMaterial.opacity = nightGlow * 0.1;
     this.tailMaterial.opacity = brake ? 0.95 : 0.22 + nightGlow * 0.2;
-    void lit;
     if (this.police) {
       const t = performance.now() * 0.006;
       const on = Math.sin(t) > 0;

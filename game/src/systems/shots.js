@@ -56,6 +56,27 @@ export class Autopilot {
 
 /* ------------------------------------------------------------------ shared helpers */
 
+/**
+ * The framing every shot shares: a wider lens than the gameplay default and a rig a little lower
+ * than it. Wide-and-low puts more sky and road in the frame, and swinging the rig off the subject's
+ * axis lands it on a third instead of dead centre — the difference between a still and a viewport.
+ *
+ * The yaw figures are tuned against the lens, not picked by eye: at 64 degrees vertical over 16:9
+ * the horizontal half angle is 48 degrees, so the third line sits about 0.35 rad off axis.
+ */
+function frameShot(game, world, { fov = 64, distance = 0, height = -0.4, yaw = 0, lateral = 0, aim = 0, target = 0, exposure = 1 } = {}) {
+  world.camera.fov = fov;
+  world.camera.updateProjectionMatrix();
+  world.post.exposureScale = exposure;
+  const rig = game.rig;
+  rig.distanceBias = distance;
+  rig.heightBias = height;
+  rig.yawOffset = yaw;
+  rig.lateralBias = lateral;
+  rig.aimBias = aim;
+  rig.targetBias = target;
+}
+
 /** Give the player a car at a spot, already seated, so the driving shots start in the driver's seat. */
 function seatPlayer(game, typeKey, x, z, yaw) {
   const v = new Vehicle(game.scene, typeKey, typeKey === 'police' ? 0x1b2432 : 0xc8452f);
@@ -168,11 +189,10 @@ export function redressChase(game, world) {
   const rx = Math.cos(yaw);
   const rz = -Math.sin(yaw);
 
-  // The chase is a hero-car shot: pull the rig in and swing it off dead-centre so the coupe reads as
-  // a three-quarter from its rear right flank instead of a flat slab straight up the road.
-  game.rig.distanceBias = -1.8;
-  game.rig.heightBias = -0.55;
-  game.rig.yawOffset = 0.34;
+  // The chase is a hero-car shot: pull the rig in, drop it low and slide it off the car's axis so
+  // the coupe reads as a three-quarter from its rear left flank on the right third, instead of a
+  // flat slab up the middle of the road.
+  frameShot(game, world, { distance: -1.5, height: -0.8, yaw: 0.26, lateral: -1.4, aim: 4.4, target: -0.45, exposure: 1.16 });
   // cruisers: one alongside on the right, one behind on the left, plus a third closing in
   game.police.units.length = 0;
   stageCruiser(game, car.x + rx * 4.2 + fx * 6.5, car.z + rz * 4.2 + fz * 6.5, yaw + 0.05);
@@ -245,12 +265,10 @@ export function setupFoot(game, world) {
   game.walker.x = 196;
   game.walker.z = 125.4;
   game.walker.yaw = Math.PI / 2;
-  game.rig.yawOffset = 0;
-  // the subtitle box sits dead centre at the bottom of the frame, so pull the camera back and up:
-  // the walker then reads full-body in the upper half instead of being cropped by the dialogue
-  game.rig.distanceBias = 2.2;
-  game.rig.heightBias = -0.2;
-  game.rig.targetBias = -0.5;
+  // wide and low, walker on the left third: the subtitle box sits dead centre at the bottom of the
+  // frame, so the camera stays far enough back to keep the whole body above it while the extra
+  // lens width carries the street either side.
+  frameShot(game, world, { distance: 2.4, height: -0.5, yaw: 0.18, lateral: 1.2, aim: -2.6, target: -0.45 });
   game.rig.snap({ x: 196, z: 125.4, y: 0.19, yaw: Math.PI / 2, speed: 0, driving: false });
   quietMission(game, 1, 0);
   return {
@@ -327,9 +345,9 @@ export function setupDrive(game, world) {
   const z = 150;
   seatPlayer(game, 'coupe', x, z, Math.PI);
   // the coast lane puts the water and the setting sun on the right, so the camera is swung off the
-  // rear bumper toward the seaward quarter: the car reads from its right rear, the ocean fills the
-  // right half of the frame and the pier and the palms close the left
-  game.rig.yawOffset = -0.62;
+  // rear bumper toward the seaward quarter: the car reads from its right rear on the left third,
+  // the ocean fills the right half of the frame and the pier and the palms close the left
+  frameShot(game, world, { distance: 0.4, height: -0.55, yaw: -0.42, lateral: 1.8, aim: 3.4, target: -0.2, exposure: 0.94 });
   game.carPhysics.vx = 0;
   game.carPhysics.vz = -33;
   game.carPhysics.speed = 33;
@@ -397,7 +415,9 @@ export function setupMission(game, world) {
   game.walker.x = -180;
   game.walker.z = -46;
   game.walker.yaw = 0;
-  game.rig.yawOffset = 0;
+  // low and off-axis: the player reads on the left third with the crew and the lit cruisers
+  // stacked across the rest of the street
+  frameShot(game, world, { distance: 0.5, height: -0.45, yaw: 0.16, lateral: 1.4, aim: -3.6, target: 0.1, exposure: 0.9, exposure: 0.9 });
   game.rig.snap({ x: -180, z: -46, y: 0, yaw: 0, speed: 0, driving: false });
   quietMission(game, 3, 1);
   game.spawnThugs(-180, -30, 4);

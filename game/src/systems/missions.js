@@ -297,7 +297,10 @@ export class MissionRunner {
 
   fromJSON(data) {
     if (!data) return;
-    this.index = data.index ?? -1;
+    // A save written against a longer mission list would otherwise index past the end of
+    // MISSIONS and every getter below it would throw on `mission.stages`.
+    const i = data.index ?? -1;
+    this.index = Number.isInteger(i) && i >= -1 && i < MISSIONS.length ? i : -1;
     this.stage = data.stage ?? 0;
     this.active = !!data.active;
     this.completed = new Set(data.completed ?? []);

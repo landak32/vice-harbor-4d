@@ -395,6 +395,36 @@ export function asphaltTexture(rng) {
   return canvasTexture(c);
 }
 
+/**
+ * Roughness map for wet asphalt: bright where the road is dry and matte, near-black in the puddles
+ * and the run-off streaks, so a standard material reads as patchy-wet instead of uniformly damp.
+ * Kept tileable by stamping every blob at the four wrap offsets.
+ */
+export function wetAsphaltRoughness(rng) {
+  const S = 256;
+  const c = makeCanvas(S, S);
+  const g = c.getContext('2d');
+  g.fillStyle = '#ebebeb'; // dry asphalt: roughness ~0.92
+  g.fillRect(0, 0, S, S);
+  for (let i = 0; i < 26; i++) {
+    const x = rng.float() * S;
+    const y = rng.float() * S;
+    const r = 7 + rng.float() * 24;
+    for (const [ox, oy] of [[0, 0], [S, 0], [-S, 0], [0, S], [0, -S]]) {
+      const grd = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r);
+      grd.addColorStop(0, 'rgba(115,115,115,0.9)'); // puddle: roughness ~0.45, not a mirror
+      grd.addColorStop(0.62, 'rgba(180,180,180,0.5)'); // wet edge
+      grd.addColorStop(1, 'rgba(240,240,240,0)');    // back to dry
+      g.fillStyle = grd;
+      g.beginPath();
+      g.arc(x + ox, y + oy, r, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+  grain(g, S, S, rng, 2600, 0.22, false);
+  return canvasTexture(c, 1, 1, false);
+}
+
 export function sandTexture(rng) {
   const S = 128;
   const c = makeCanvas(S, S);

@@ -1,6 +1,6 @@
 [
-  { "name": "1-drive.jpg", "query": "?shot=drive&seed=7" },
-  { "name": "2-chase.jpg", "query": "?shot=chase&seed=7" },
-  { "name": "3-foot.jpg", "query": "?shot=foot&seed=7" },
-  { "name": "4-mission.jpg", "query": "?shot=mission&seed=7" }
+  { "name": "1-drive.jpg", "query": "?shot=drive&seed=7", "subject": "Coast road at sunset, car on the left third with the ocean behind it" },
+  { "name": "2-chase.jpg", "query": "?shot=chase&seed=7", "subject": "Night pursuit downtown, coupe on the right third under the air unit" },
+  { "name": "3-foot.jpg", "query": "?shot=foot&seed=7", "subject": "Daytime sidewalk, player on the right third against the boardwalk crowd" },
+  { "name": "4-mission.jpg", "query": "?shot=mission&seed=7", "subject": "Night firefight on Cannery Ave, player on the left third with the crew ahead" }
 ]

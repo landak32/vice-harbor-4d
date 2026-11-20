@@ -18,6 +18,13 @@ export class CameraRig {
     this.distanceBias = 0;
     this.heightBias = 0;
     this.targetBias = 0;
+    // Shot-only lateral slide, on top of the on-foot shoulder offset: it swings the camera off the
+    // subject's axis for a three-quarter angle instead of a flat straight-on view.
+    this.lateralBias = 0;
+    // Shot-only aim offset. Sliding the camera does almost nothing to where the subject sits in
+    // frame, because the rig re-aims at a point ahead of the subject and the two cancel out. Aiming
+    // past the subject is what puts it on a third.
+    this.aimBias = 0;
     this.shake = 0;
     this.desired = new THREE.Vector3();
     this.targetDesired = new THREE.Vector3();
@@ -59,8 +66,9 @@ export class CameraRig {
     const sinY = Math.sin(this.yaw);
     const cosY = Math.cos(this.yaw);
     const back = this.distance;
-    const desiredX = state.x - sinY * back + cosY * shoulder;
-    const desiredZ = state.z - cosY * back - sinY * shoulder;
+    const lateral = shoulder + this.lateralBias;
+    const desiredX = state.x - sinY * back + cosY * lateral;
+    const desiredZ = state.z - cosY * back - sinY * lateral;
     const desiredY = this.height + (state.y ?? 0) + pitch * 2.2;
 
     const lambda = driving ? 4.2 : 6.5;
@@ -77,8 +85,8 @@ export class CameraRig {
     const lead = driving ? 2.8 + speed * 0.09 : 2.6;
     const aimBlend = state.aim ?? 0;
     const leadYaw = this.yaw + aimBlend * this.yawOffset * 0.4;
-    const tx = state.x + Math.sin(leadYaw) * lead;
-    const tz = state.z + Math.cos(leadYaw) * lead;
+    const tx = state.x + Math.sin(leadYaw) * lead + Math.cos(leadYaw) * this.aimBias;
+    const tz = state.z + Math.cos(leadYaw) * lead - Math.sin(leadYaw) * this.aimBias;
     const ty = (state.y ?? 0) + (driving ? 1.5 : 1.55) + pitch * 0.6 + this.targetBias;
 
     const tLambda = 7.5;

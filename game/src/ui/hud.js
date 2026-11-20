@@ -143,7 +143,12 @@ export class Hud {
     this.set('driving', driving, (v) => { this.el.speedo.classList.toggle('on', v); });
     if (driving) {
       this.set('kmh', Math.round(s.kmh ?? 0), (v) => { this.el.kmh.textContent = String(v); });
-      this.set('gear', s.gear ?? 1, (v) => { this.el.carSpec.textContent = `GEAR ${v} · ${s.carSpec ?? ''}`; });
+      // keyed on the pair: caching on the gear alone left the previous car's spec line on screen
+      // whenever the player swapped cars in the same gear
+      this.set('gear', `${s.gear ?? 1}|${s.carSpec ?? ''}`, (v) => {
+        const [gear, spec] = v.split('|');
+        this.el.carSpec.textContent = `GEAR ${gear} · ${spec}`;
+      });
       this.set('carName', s.carName ?? '—', (v) => { this.el.carName.textContent = v; });
       this.set('carDmg', Math.round((s.carDamage ?? 0) * 100), (v) => {
         this.el.carDmg.style.width = `${v}%`;

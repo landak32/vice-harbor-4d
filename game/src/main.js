@@ -2,7 +2,7 @@
 // runs the fixed-timestep loop. `?shot=<name>&seed=<n>` boots straight into a scene, drives it with
 // an autopilot, re-dresses it around the final camera and renders exactly one frame.
 import * as THREE from '../vendor/three.module.min.js';
-import { createRenderer, createCamera, handleResize, sizeForShot } from './render/renderer.js';
+import { createRenderer, createCamera, handleResize, sizeForShot, PostPipeline } from './render/renderer.js';
 import { SkyDome } from './render/sky.js';
 import { DayCycle, CameraFillLight } from './render/lighting.js';
 import { Effects } from './render/effects.js';
@@ -27,6 +27,7 @@ const isShot = !!shotName && !!SHOTS[shotName];
 
 const canvas = document.getElementById('game');
 const renderer = createRenderer(canvas);
+const post = new PostPipeline(renderer);
 const camera = createCamera();
 const scene = new THREE.Scene();
 scene.userData.camera = camera;
@@ -46,7 +47,7 @@ const collision = new CollisionWorld(city);
 const pedestrians = new Pedestrians(scene, city, collision, seed + 5, 96);
 const traffic = new TrafficSystem(scene, city, seed + 6, 38);
 
-const world = { scene, city, buildings, props, coast, skyline, collision, day, effects, audio, camera, pedestrians, traffic, seed, sky };
+const world = { scene, city, buildings, props, coast, skyline, collision, day, effects, audio, camera, pedestrians, traffic, seed, sky, post };
 const game = new Game(world);
 
 // Development aid: ?hide=nameA,nameB switches named objects off, used to bisect a bad frame.
@@ -67,6 +68,7 @@ function worldStep(dt, input) {
   day.update(dt, focus);
   buildings.setNight(day.lampGlow);
   props.update(dt, day.lampGlow);
+  city.updateWetness(day);
   coast.update(dt, time, day);
   skyline.update(day);
   sky.update(day.night, day.sunDir, day.moonDir, day.sunColor);
@@ -76,9 +78,12 @@ function worldStep(dt, input) {
   sky.follow(camera);
 }
 
-function render() {
+function render(dt = 0) {
   renderer.info.reset();
-  renderer.render(scene, camera);
+  // Scene into a linear HDR target, then bloom + grade back onto the canvas. Exposure follows the
+  // day palette (it has carried a per-palette `exposure` since the start; the grade is what reads it).
+  renderer.toneMappingExposure = day.palette.exposure;
+  post.render(scene, camera, dt);
   frames++;
 }
 
@@ -192,7 +197,7 @@ function boot() {
       step.advance(dt * 0.35, (fixed) => worldStep(fixed, null));
     }
     updateHud();
-    render();
+    render(dt);
     window.__vh = { frames, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
     requestAnimationFrame(loop);
   };
