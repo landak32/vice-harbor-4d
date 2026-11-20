@@ -67,6 +67,8 @@ export class Hud {
     this.root.classList.toggle('on', on);
   }
 
+  /** Write-through cache: `apply` runs only when `value` changes, so a per-frame snapshot still
+   *  touches the DOM just on real differences. */
   set(key, value, apply) {
     if (this.cache[key] === value) return;
     this.cache[key] = value;

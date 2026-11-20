@@ -107,6 +107,10 @@ const SHEEN_FRAG = /* glsl */ `
   }
 `;
 
+/**
+ * Which district owns block (i, j): ordered checks, so the far columns are coral whatever row they
+ * sit on, the top rows are verano, and neon fills the middle.
+ */
 export function districtAt(i, j) {
   if (i <= 2) return DISTRICTS.harbor;
   if (i >= 6) return DISTRICTS.coral;

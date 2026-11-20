@@ -36,6 +36,7 @@ export class Autopilot {
     return this.prev.has(a) && !this.held.has(a);
   }
 
+  /** Digital stick in [-1,1]; diagonals are clamped to unit length, a single key stays at 1. */
   moveAxis() {
     let x = 0;
     let y = 0;
@@ -43,8 +44,8 @@ export class Autopilot {
     if (this.held.has('right')) x += 1;
     if (this.held.has('forward')) y += 1;
     if (this.held.has('back')) y -= 1;
-    const len = Math.hypot(x, y);
-    return { x: x / (len > 1 ? len : 1), y: y / (len > 1 ? len : 1) };
+    const scale = Math.max(1, Math.hypot(x, y));
+    return { x: x / scale, y: y / scale };
   }
 
   endStep() {

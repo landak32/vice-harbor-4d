@@ -17,6 +17,9 @@ import { dist2 } from '../core/math.js';
 
 const CALLSIGNS = ['KITE', 'MARLIN', 'CORAL', 'TARPON', 'GULL', 'PELICAN', 'ANCHOR', 'DRIFT'];
 
+/** How close a parked car has to be, in metres, before the player can get in. */
+const CAR_ENTER_RANGE = 7;
+
 /** Police return fire: how often a shot connects, and what a hit costs with and without armour. */
 const POLICE_HIT_CHANCE = 0.45;
 const POLICE_DAMAGE_ARMOURED = 4;
@@ -98,7 +101,7 @@ export class Game {
       this.exitCar();
       return;
     }
-    const near = this.world.traffic.nearest(this.walker.x, this.walker.z, 7);
+    const near = this.world.traffic.nearest(this.walker.x, this.walker.z, CAR_ENTER_RANGE);
     if (!near) {
       this.hud.toast('No car close enough');
       return;

@@ -3,6 +3,10 @@
 import * as THREE from '../../vendor/three.module.min.js';
 import { css } from '../core/math.js';
 
+// Edge length in pixels of every repeating tile painted here, so texel density stays consistent
+// between facades and roads.
+const TILE_PX = 256;
+
 export function makeCanvas(w, h) {
   const c = document.createElement('canvas');
   c.width = w;
@@ -50,7 +54,7 @@ function grime(g, w, h, rng, color) {
  * only the lit windows are painted, which is what turns the city on after dark.
  */
 export function facadeTextures(rng, style, pal) {
-  const S = 256;
+  const S = TILE_PX;
   const map = makeCanvas(S, S);
   const emi = makeCanvas(S, S);
   const g = map.getContext('2d');
@@ -401,7 +405,7 @@ export function asphaltTexture(rng) {
  * Kept tileable by stamping every blob at the four wrap offsets.
  */
 export function wetAsphaltRoughness(rng) {
-  const S = 256;
+  const S = TILE_PX;
   const c = makeCanvas(S, S);
   const g = c.getContext('2d');
   g.fillStyle = '#ebebeb'; // dry asphalt: roughness ~0.92

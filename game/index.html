@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vice Harbor</title>
 <style>
+  /* Layer order, bottom to top: #game canvas, #hud (pointer-events: none, so clicks reach the canvas
+     for pointer lock), .screen menus at z-index 5, #loading at 9 until boot removes it. */
   :root { --ink: #eaf6f8; --panel: rgba(6, 16, 24, 0.66); --line: rgba(120, 226, 236, 0.35); --amber: #ffb347; --coral: #ff5f6d; --teal: #3ee0d0; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #05080d; color: var(--ink);
     font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif; user-select: none; }

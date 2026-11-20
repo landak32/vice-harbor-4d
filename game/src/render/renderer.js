@@ -31,7 +31,10 @@ export function createCamera() {
   return camera;
 }
 
-/** Fixed-size render for the shot recorder: exactly 1280x720, device pixel ratio 1. */
+/**
+ * Fixed-size render for the shot recorder: canvas laid out at `width` x `height` (1280x720 by
+ * default) and drawn at pixel ratio 1.5, so the capture reads back 1920x1080 and downscales clean.
+ */
 export function sizeForShot(renderer, camera, width = 1280, height = 720) {
   renderer.setPixelRatio(1.5);
   renderer.setSize(width, height, false);

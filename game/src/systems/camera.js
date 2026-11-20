@@ -4,6 +4,14 @@
 import * as THREE from '../../vendor/three.module.min.js';
 import { clamp, damp, wrapAngle } from '../core/math.js';
 
+/**
+ * How far behind the car the chase camera sits: 9.0 at rest, easing to 12 with speed (clamped around
+ * 30 u/s) so the rig never trails far enough back to sink into the facades behind the car.
+ */
+function chaseDistance(speed) {
+  return 9.0 + Math.min(3.0, Math.abs(speed ?? 0) * 0.1);
+}
+
 export class CameraRig {
   constructor(camera) {
     this.camera = camera;
@@ -54,12 +62,9 @@ export class CameraRig {
     const baseYaw = state.yaw + this.yawOffset;
     this.yaw = this.initialised ? this.yaw + wrapAngle(baseYaw - this.yaw) * (1 - Math.exp(-9 * dt)) : baseYaw;
 
-    // 9.0 is the closest chase distance that keeps the car's own roof and boot out of the bottom
-    // of the frame at this height; the 0.10 per unit of speed buys look-room ahead as the road
-    // rushes in. The 3.0 clamp (~30 u/s) stops the rig trailing far enough back to sink into the
-    // facades behind the car and, since distance is damped at lambda 4, stops it drifting on
-    // after a crash instead of snapping home.
-    const dist = (driving ? 9.0 + Math.min(3.0, speed * 0.10) : 5.6) + this.distanceBias;
+    // the clamp above is why distance is damped at lambda 4: it stops the rig drifting on after a
+    // crash instead of snapping home.
+    const dist = (driving ? chaseDistance(speed) : 5.6) + this.distanceBias;
     const height = (driving ? 4.35 + Math.min(0.9, speed * 0.02) : 2.55) + this.heightBias;
     this.distance = damp(this.distance, dist, 4, dt);
     this.height = damp(this.height, height, 4, dt);
@@ -123,7 +128,7 @@ export class CameraRig {
   snap(state) {
     this.initialised = false;
     this.yaw = state.yaw + this.yawOffset;
-    this.distance = (state.driving ? 9.0 + Math.min(3.0, Math.abs(state.speed ?? 0) * 0.1) : 5.6) + this.distanceBias;
+    this.distance = (state.driving ? chaseDistance(state.speed) : 5.6) + this.distanceBias;
     this.height = (state.driving ? 4.1 : 2.55) + this.heightBias;
     this.update(1 / 60, state);
   }

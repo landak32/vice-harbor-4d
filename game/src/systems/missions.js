@@ -3,6 +3,11 @@
 // test evaluated against the world.
 import { dist2 } from '../core/math.js';
 
+/**
+ * Every job, in play order. Stage fields: objective (HUD prompt), marker ({x,z} blip), dialogue
+ * ({who,portrait,line}, shown on entry), onEnter (side effect) and complete (predicate). Arrival
+ * stages use a radius in metres between 9 and 16, wider where the marker sits in open ground.
+ */
 export const MISSIONS = [
   {
     id: 'ferry_ticket',

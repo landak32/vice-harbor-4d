@@ -96,6 +96,10 @@ function updateHud() {
 
 /* ------------------------------------------------------------------ shot recording */
 
+// Capture frames are always authored at the same size so the four staged stills line up.
+const SHOT_WIDTH = 1280;
+const SHOT_HEIGHT = 720;
+
 function runShot(name) {
   const shot = SHOTS[name];
   const autopilot = new Autopilot();
@@ -104,7 +108,7 @@ function runShot(name) {
   // the cover is key art, not a capture: every HUD panel goes away and the title block takes over
   document.body.classList.toggle('cover-shot', name === 'cover');
   document.getElementById('title')?.classList.remove('on');
-  sizeForShot(renderer, camera, 1280, 720);
+  sizeForShot(renderer, camera, SHOT_WIDTH, SHOT_HEIGHT);
 
   const step = new FixedStep();
   step.runFixed(setup.seconds, (dt) => {

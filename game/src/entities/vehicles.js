@@ -28,6 +28,7 @@ const WHITE = [0.93, 0.93, 0.93];
 const LAMP = [1.0, 0.95, 0.82];
 const TAIL = [0.55, 0.07, 0.06];
 
+// One body per type, built on first use and shared by traffic, player and police afterwards.
 const geoCache = new Map();
 
 /** Body shell (no wheels) in vertex colours; body panels are near-white so a paint tint shows. */

@@ -96,7 +96,7 @@ export class DayCycle {
     this.night = 1 - daylight;
     this.sunUp = clamp(elevation * 3 + 0.4, 0, 1);
 
-    const base = this.night > 0.55 ? PALETTES.night : PALETTES.day;
+    // day and night blend continuously on `night`; dusk is then layered on top as a narrow band
     const p = {};
     for (const k of Object.keys(PALETTES.day)) p[k] = mixPalette(PALETTES.day, PALETTES.night, this.night, k);
     if (dusk > 0.02) {

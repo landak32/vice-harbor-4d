@@ -1,6 +1,34 @@
 [
-  { "name": "1-cover.jpg", "query": "?shot=cover&seed=7", "subject": "Key art: coupe on the left third of Ocean Drive at sunset, warm key and cool rim, title block in the lower left" },
-  { "name": "2-chase.jpg", "query": "?shot=chase&seed=7", "subject": "Night pursuit downtown, coupe on the right third under the air unit" },
-  { "name": "3-foot.jpg", "query": "?shot=foot&seed=7", "subject": "Dusk sidewalk, player on the right third against the boardwalk crowd" },
-  { "name": "4-mission.jpg", "query": "?shot=mission&seed=7", "subject": "Night firefight on Cannery Ave, player on the left third with the crew ahead" }
+  {
+    "name": "1-cover.jpg",
+    "query": "?shot=cover&seed=7",
+    "seed": 7,
+    "shot": "cover",
+    "caption": "Key art: the coupe on the left third of Ocean Drive at sunset, title block lower left",
+    "subject": "Key art: coupe on the left third of Ocean Drive at sunset, warm key and cool rim, title block in the lower left"
+  },
+  {
+    "name": "2-chase.jpg",
+    "query": "?shot=chase&seed=7",
+    "seed": 7,
+    "shot": "chase",
+    "caption": "Night pursuit downtown, the coupe on the right third under the air unit",
+    "subject": "Night pursuit downtown, coupe on the right third under the air unit"
+  },
+  {
+    "name": "3-foot.jpg",
+    "query": "?shot=foot&seed=7",
+    "seed": 7,
+    "shot": "foot",
+    "caption": "Dusk sidewalk, the player on the right third against the boardwalk crowd",
+    "subject": "Dusk sidewalk, player on the right third against the boardwalk crowd"
+  },
+  {
+    "name": "4-mission.jpg",
+    "query": "?shot=mission&seed=7",
+    "seed": 7,
+    "shot": "mission",
+    "caption": "Night firefight on Cannery Ave, the player on the left third with the crew ahead",
+    "subject": "Night firefight on Cannery Ave, player on the left third with the crew ahead"
+  }
 ]
