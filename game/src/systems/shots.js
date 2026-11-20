@@ -64,7 +64,7 @@ export class Autopilot {
  * The yaw figures are tuned against the lens, not picked by eye: at 64 degrees vertical over 16:9
  * the horizontal half angle is 48 degrees, so the third line sits about 0.35 rad off axis.
  */
-function frameShot(game, world, { fov = 64, distance = 0, height = -0.4, yaw = 0, lateral = 0, aim = 0, target = 0, exposure = 1 } = {}) {
+function frameShot(game, world, { fov = 64, distance = 0, height = -0.4, yaw = 0, lateral = 0, aim = 0, target = 0, exposure = 1, roll = 0 } = {}) {
   world.camera.fov = fov;
   world.camera.updateProjectionMatrix();
   world.post.exposureScale = exposure;
@@ -75,6 +75,7 @@ function frameShot(game, world, { fov = 64, distance = 0, height = -0.4, yaw = 0
   rig.lateralBias = lateral;
   rig.aimBias = aim;
   rig.targetBias = target;
+  rig.rollBias = roll;
 }
 
 /** Give the player a car at a spot, already seated, so the driving shots start in the driver's seat. */
@@ -249,7 +250,7 @@ export function redressChase(game, world) {
 /* ------------------------------------------------------------------ foot: daytime sidewalk */
 
 export function setupFoot(game, world) {
-  world.day.setHour(11.3);
+  world.day.setHour(18.4);
   game.money = 7420;
   game.rep = 2975;
   game.health = 92;
@@ -267,8 +268,9 @@ export function setupFoot(game, world) {
   game.walker.yaw = Math.PI / 2;
   // wide and low, walker on the left third: the subtitle box sits dead centre at the bottom of the
   // frame, so the camera stays far enough back to keep the whole body above it while the extra
-  // lens width carries the street either side.
-  frameShot(game, world, { distance: 2.4, height: -0.5, yaw: 0.18, lateral: 1.2, aim: -2.6, target: -0.45 });
+  // lens width carries the street either side. Dusk now, so the exposure comes down off the
+  // midday key: the shot is graded to sit with the other three, not to be the bright one.
+  frameShot(game, world, { distance: 2.4, height: -0.5, yaw: 0.18, lateral: 1.2, aim: -2.6, target: -0.45, exposure: 0.55 });
   game.rig.snap({ x: 196, z: 125.4, y: 0.19, yaw: Math.PI / 2, speed: 0, driving: false });
   quietMission(game, 1, 0);
   return {
@@ -401,6 +403,98 @@ export function redressDrive(game, world) {
   world.traffic.syncInstances(0.0001, world.day.lampGlow);
 }
 
+/* ------------------------------------------------------------------ cover: hero key art */
+
+/**
+ * The cover. Same coast road, same coupe, same hour as the drive still, but framed as key art
+ * rather than as a viewport: a longer 52 degree lens, the rig dropped below the boot line and swung
+ * 28 degrees off the rear axle onto the car's left rear quarter, so the coupe lands on the left
+ * third and the boulevard, the palms and the setting sun open across the right two thirds. A degree
+ * and a half of roll keeps the horizon off the pixel grid.
+ *
+ * The car is still rolling, slowly, for two reasons that show up in the pixels: the wheels turn and
+ * the headlights and tail lamps are live rather than parked geometry.
+ */
+export function setupCover(game, world) {
+  world.day.setHour(17.9);
+  game.money = 12980;
+  game.rep = 4285;
+  game.health = 100;
+  game.armour = 60;
+  game.weapon.select('pistol');
+  game.wanted = 0;
+  game.police.wanted = 0;
+  const x = CITY_HALF - 3.4;
+  const z = 150;
+  seatPlayer(game, 'coupe', x, z, Math.PI);
+  frameShot(game, world, {
+    fov: 52,
+    distance: -3.4,
+    height: -1.9,
+    yaw: 0.49,
+    lateral: 0,
+    aim: -3.2,
+    target: -0.9,
+    exposure: 0.40,
+    roll: 0.0262,
+  });
+  // slow roll: a second and a bit of throttle, then coasting, so the car ends the run at roughly
+  // 35 km/h — the wheels are turning and the lamps are live, but nothing is a blur
+  game.carPhysics.vx = 0;
+  game.carPhysics.vz = -7;
+  game.carPhysics.speed = 7;
+  quietMission(game, 2, 2);
+  return {
+    seconds: 2.4,
+    script: (t, ap) => {
+      ap.set(t < 1.3 ? ['forward'] : []);
+    },
+  };
+}
+
+/**
+ * The cover re-dress: almost nothing in frame. A cover wants one subject and clean road, so the
+ * traffic that fills the drive still is pulled back to two distant cars and the beach keeps a
+ * couple of silhouettes. No police, no toast — the HUD is hidden for this shot anyway.
+ */
+export function redressCover(game, world) {
+  const car = game.car.group.position;
+  const yaw = game.car.group.rotation.y;
+  const fx = Math.sin(yaw);
+  const fz = Math.cos(yaw);
+  const rx = Math.cos(yaw);
+  const rz = -Math.sin(yaw);
+
+  const layout = [
+    { ahead: 44, side: 0, flip: 0 },
+    { ahead: 68, side: 0, flip: 0 },
+    { ahead: 38, side: 6.8, flip: Math.PI },
+  ];
+  layout.forEach((l, i) => {
+    const c = trafficAt(world, i);
+    if (!c) return;
+    parkTrafficCar(world, c, car.x + fx * l.ahead + rx * l.side, car.z + fz * l.ahead + rz * l.side, yaw + l.flip);
+  });
+  // everything else in the pool goes home, so no car is parked on the cover's sightline
+  for (let i = layout.length; i < world.traffic.cars.length; i++) {
+    const c = world.traffic.cars[i];
+    if (c) parkTrafficCar(world, c, car.x + fx * -220, car.z + fz * -220, yaw);
+  }
+
+  for (let i = 0; i < 6; i++) {
+    const p = pedAt(world, i);
+    if (!p) continue;
+    const along = 4 + i * 5.5;
+    const out = 16 + (i % 3) * 5;
+    p.pinned = { x: car.x + fx * along + rx * out, z: car.z + fz * along + rz * out, yaw: yaw + Math.PI / 2 };
+    p.dead = false;
+    p.panic = 0;
+  }
+
+  world.pedestrians.update(0.0001, 0);
+  world.traffic.syncInstances(0.0001, world.day.lampGlow);
+}
+
 /* ------------------------------------------------------------------ mission: firefight */
 
 export function setupMission(game, world) {
@@ -495,6 +589,7 @@ export function redressMission(game, world) {
 }
 
 export const SHOTS = {
+  cover: { setup: setupCover, redress: redressCover },
   chase: { setup: setupChase, redress: redressChase },
   foot: { setup: setupFoot, redress: redressFoot },
   drive: { setup: setupDrive, redress: redressDrive },

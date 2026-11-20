@@ -116,6 +116,18 @@
   #speedo { bottom: 108px; }
   #speedo .spec { font-size: 9px; letter-spacing: 1.3px; color: #93b6c2; margin-top: 2px; }
   #speedo .dmgTxt { font-size: 8.5px; letter-spacing: 1.3px; color: var(--amber); margin-top: 3px; }
+
+  /* --- cover key art: no HUD, a title block instead ------------------------------------------- */
+  /* Hidden unless the cover shot asks for it, so the playable game never sees this. */
+  #cover-title { position: fixed; left: 56px; bottom: 52px; display: none; z-index: 4; pointer-events: none; }
+  #cover-title .name { font-size: 58px; font-weight: 800; line-height: .96; letter-spacing: 14px;
+    color: #fff5e6; text-shadow: 0 8px 34px rgba(4,8,14,.72), 0 0 2px rgba(0,0,0,.5); }
+  #cover-title .rule { width: 268px; height: 1px; margin: 15px 0 13px;
+    background: linear-gradient(90deg, rgba(255,196,138,.95), rgba(255,196,138,.12)); }
+  #cover-title .sub { font-size: 11.5px; font-variant: small-caps; letter-spacing: 5.2px;
+    color: #ffd9b0; text-shadow: 0 2px 12px rgba(4,8,14,.85); }
+  body.cover-shot #hud { display: none; }
+  body.cover-shot #cover-title { display: block; }
 </style>
 </head>
 <body>
@@ -176,6 +188,12 @@
   <div id="banner" class="panel"><div class="t" id="banTag">MISSION COMPLETE</div><div class="n" id="banName">—</div><div class="r" id="banReward">—</div></div>
   <div id="toast" class="panel">—</div>
   <div id="help">WASD move · SHIFT sprint · E enter/exit · F fire · Q weapon · H horn · C handbrake · ESC pause</div>
+</div>
+
+<div id="cover-title">
+  <div class="name">VICE HARBOR</div>
+  <div class="rule"></div>
+  <div class="sub">An open-world crime sandbox</div>
 </div>
 
 <div id="title" class="screen on">

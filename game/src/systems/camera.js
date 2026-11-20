@@ -25,6 +25,9 @@ export class CameraRig {
     // frame, because the rig re-aims at a point ahead of the subject and the two cancel out. Aiming
     // past the subject is what puts it on a third.
     this.aimBias = 0;
+    // Shot-only camera roll, in radians, applied after lookAt: a couple of degrees of tilt is the
+    // difference between a frame that reads as a viewport and one that reads as a still.
+    this.rollBias = 0;
     this.shake = 0;
     this.desired = new THREE.Vector3();
     this.targetDesired = new THREE.Vector3();
@@ -107,6 +110,8 @@ export class CameraRig {
 
     this.camera.position.copy(this.position);
     this.camera.lookAt(this.target);
+    // local Z is the view axis after lookAt, so this is a true roll rather than a yaw
+    if (this.rollBias) this.camera.rotateZ(this.rollBias);
     this.initialised = true;
   }
 

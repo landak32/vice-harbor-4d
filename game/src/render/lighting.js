@@ -141,6 +141,87 @@ export class DayCycle {
 }
 
 /**
+ * Two lights that exist only for the cover frame: a warm key raking in from camera-left at 45
+ * degrees and a cool rim from behind the car. Neither casts a shadow — the sun already owns the
+ * shadow map, and the point of these is separation, not a second set of contact shadows.
+ *
+ * They are built switched off and only the cover shot turns them on, so every other still keeps the
+ * exact lighting it was graded with.
+ */
+export class HeroLights {
+  constructor(scene) {
+    this.scene = scene;
+    // warm, from the sunset side but off the sun's own axis so it reads as a second source
+    this.key = new THREE.DirectionalLight(0xffc48a, 0);
+    this.key.castShadow = false;
+    scene.add(this.key);
+    scene.add(this.key.target);
+    // cool, from the opposite quarter: this is what draws a bright edge down the car's flank
+    this.rim = new THREE.DirectionalLight(0x9ec8ff, 0);
+    this.rim.castShadow = false;
+    scene.add(this.rim);
+    scene.add(this.rim.target);
+    this.on = false;
+    this.left = new THREE.Vector3();
+    this.dir = new THREE.Vector3();
+    this.focus = new THREE.Vector3();
+  }
+
+  /** Switch the rig on or off for the frame; `focus` is the car the lights are aimed at. */
+  set(enabled) {
+    this.on = enabled;
+    this.key.visible = enabled;
+    this.rim.visible = enabled;
+  }
+
+  /**
+   * Place both lights relative to the final camera and the car, so the key is always camera-left at
+   * 45 degrees and the rim is always behind the car regardless of where the rig ended up.
+   */
+  update(camera, focus) {
+    if (!this.on || !focus) return;
+    this.focus.copy(focus);
+    // camera-left in world space: the camera's local -X axis
+    this.left.set(-1, 0, 0).applyQuaternion(camera.quaternion);
+    this.left.y = 0;
+    if (this.left.lengthSq() < 1e-6) this.left.set(0, 0, 1);
+    this.left.normalize();
+
+    // 45 degrees to the camera axis, on the camera's left, then 45 degrees up. The base vector has
+    // to point from the car back toward the camera: keying from the far side of the subject puts the
+    // light beyond it and lights nothing the lens can see.
+    const c45 = Math.cos(Math.PI / 4);
+    const s45 = Math.sin(Math.PI / 4);
+    this.dir.copy(camera.position).sub(this.focus);
+    this.dir.y = 0;
+    if (this.dir.lengthSq() < 1e-6) this.dir.set(0, 0, 1);
+    this.dir.normalize();
+    const hx = this.dir.x * c45 + this.left.x * s45;
+    const hz = this.dir.z * c45 + this.left.z * s45;
+    this.dir.set(hx, 0, hz).normalize();
+    this.dir.multiplyScalar(c45);
+    this.dir.y = s45;
+    this.dir.normalize();
+    this.key.position.copy(this.focus).addScaledVector(this.dir, 34);
+    this.key.target.position.copy(this.focus);
+    this.key.target.updateMatrixWorld();
+    this.key.intensity = 3.4;
+
+    // rim: from the far side of the car as seen from the camera, lifted a little
+    this.dir.copy(this.focus).sub(camera.position);
+    this.dir.y = 0;
+    if (this.dir.lengthSq() < 1e-6) this.dir.set(0, 0, 1);
+    this.dir.normalize();
+    this.dir.y = 0.42;
+    this.dir.normalize();
+    this.rim.position.copy(this.focus).addScaledVector(this.dir, 30);
+    this.rim.target.position.copy(this.focus);
+    this.rim.target.updateMatrixWorld();
+    this.rim.intensity = 1.6;
+  }
+}
+
+/**
  * A soft fill light riding on the camera. Night streets are lit by lamps that rarely point at the
  * hero, so a low-intensity, shadowless key from over the camera's shoulder is what keeps the player
  * character and their car readable in a night frame without flattening the whole scene.

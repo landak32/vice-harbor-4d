@@ -4,7 +4,7 @@
 import * as THREE from '../vendor/three.module.min.js';
 import { createRenderer, createCamera, handleResize, sizeForShot, PostPipeline } from './render/renderer.js';
 import { SkyDome } from './render/sky.js';
-import { DayCycle, CameraFillLight } from './render/lighting.js';
+import { DayCycle, CameraFillLight, HeroLights } from './render/lighting.js';
 import { Effects } from './render/effects.js';
 import { City } from './world/city.js';
 import { Buildings } from './world/buildings.js';
@@ -36,6 +36,8 @@ const sky = new SkyDome(scene);
 const day = new DayCycle(scene);
 const effects = new Effects(scene);
 const fill = new CameraFillLight(scene);
+// cover-only key + rim rig; built switched off, so no other shot is lit by it
+const hero = new HeroLights(scene);
 const audio = new AudioEngine();
 
 const city = new City(scene, seed);
@@ -47,7 +49,7 @@ const collision = new CollisionWorld(city);
 const pedestrians = new Pedestrians(scene, city, collision, seed + 5, 96);
 const traffic = new TrafficSystem(scene, city, seed + 6, 38);
 
-const world = { scene, city, buildings, props, coast, skyline, collision, day, effects, audio, camera, pedestrians, traffic, seed, sky, post };
+const world = { scene, city, buildings, props, coast, skyline, collision, day, effects, audio, camera, pedestrians, traffic, seed, sky, post, hero };
 const game = new Game(world);
 
 // Development aid: ?hide=nameA,nameB switches named objects off, used to bisect a bad frame.
@@ -99,6 +101,8 @@ function runShot(name) {
   const autopilot = new Autopilot();
   const setup = shot.setup(game, world);
   game.hud.show(true);
+  // the cover is key art, not a capture: every HUD panel goes away and the title block takes over
+  document.body.classList.toggle('cover-shot', name === 'cover');
   document.getElementById('title')?.classList.remove('on');
   sizeForShot(renderer, camera, 1280, 720);
 
@@ -117,6 +121,9 @@ function runShot(name) {
     ? { x: game.car.group.position.x, z: game.car.group.position.z, y: 0, yaw: game.car.group.rotation.y, speed: Math.abs(game.carPhysics.speed), driving: true }
     : { x: game.walker.x, z: game.walker.z, y: game.walker.y, yaw: game.walker.yaw, speed: 0, driving: false });
   fill.update(camera, day.night);
+  // hero key + rim: cover only, placed from the pose the camera actually settled on
+  world.hero.set(name === 'cover');
+  world.hero.update(camera, game.driving ? game.car.group.position : game.walker);
   sky.follow(camera);
   updateHud();
   game.hud.tick(0.016);
